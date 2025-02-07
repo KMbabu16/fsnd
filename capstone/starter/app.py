@@ -3,7 +3,7 @@ from flask import Flask, request, abort, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from datetime import datetime
-from models import setup_db,db, db_drop_and_create_all, Actor, Movie
+from models import setup_db, db, db_drop_and_create_all, Actor, Movie
 from auth.auth import AuthError, requires_auth
 
 def create_app(test_config=None):
@@ -18,52 +18,50 @@ def create_app(test_config=None):
 
     CORS(app)
     
-    # Remove or comment this in production
-    # Running this will wipe the database every time the app restarts
-    # with app.app_context():
-    #     db_drop_and_create_all()
+    # Uncomment this in development to drop and create all tables
+    with app.app_context():
+        db_drop_and_create_all()
 
     # GET implementation
-    @app.route('/actors')
-    @requires_auth(permission=["get:actors"])
+    @app.route('/actors', methods=['GET'])
     def get_actors():
-        actors = Actor.query.order_by(Actor.id).all()
-        actors_json = [{'id': actor.id, 'name': actor.name} for actor in actors]
+        actors = Actor.query.order_by(Actor.id).all()  
+        actors_json = [{'id': actor.id, 'name': actor.name,'age':actor.age,'gender':actor.gender} for actor in actors]
         return jsonify({'actors': actors_json, 'total_actors': len(actors_json)})
 
-    @app.route('/movies')
-    @requires_auth(permission=["get:movies"])
+
+    @app.route('/movies', methods=['GET'])
+    @requires_auth(permission=["get:movies"])  
     def get_movies():
         movies = Movie.query.order_by(Movie.id).all()
-        movies_json = [{'id': movie.id, 'title': movie.title} for movie in movies]
+        movies_json = [{'id': movie.id, 'title': movie.title,'release_date':movie.release_date,'genres':movie.genres} for movie in movies]
         return jsonify({'movies': movies_json, 'total_movies': len(movies_json)})
-
     # DELETE implementation
     @app.route('/actors/<int:actor_id>', methods=['DELETE'])
-    @requires_auth(permission=["delete:actors"])
+    @requires_auth(permission=["delete:actors"]) 
     def delete_actor(actor_id):
         actor = db.session.get(Actor, actor_id)
         if not actor:
             abort(404, description=f"Actor with id {actor_id} not available")
-        with app.app_context():
-            db.session.delete(actor)
-            db.session.commit()
+        
+        db.session.delete(actor)
+        db.session.commit()
         return jsonify({"success": True}), 200
 
     @app.route('/movies/<int:movie_id>', methods=['DELETE'])
-    @requires_auth(permission=["delete:movies"])
+    @requires_auth(permission=["delete:movies"]) 
     def delete_movie(movie_id):
-        movie = db.session.get(Movie,movie_id)
+        movie = db.session.get(Movie, movie_id)
         if not movie:
             abort(404, description=f"Movie with id {movie_id} not available")
-        with app.app_context():
-            db.session.delete(movie)
-            db.session.commit()
+        
+        db.session.delete(movie)
+        db.session.commit()
         return jsonify({"success": True}), 200
 
     # PATCH implementation
     @app.route('/actors/<int:actor_id>', methods=['PATCH'])
-    @requires_auth(permission=["patch:actors"])
+    @requires_auth(permission=["patch:actors"]) 
     def patch_actor(actor_id):
         actor = db.session.get(Actor, actor_id)
         if not actor:
@@ -77,15 +75,13 @@ def create_app(test_config=None):
         actor.age = body.get('age', actor.age)
         actor.gender = body.get('gender', actor.gender)
         
-        with app.app_context():
-            db.session.commit()
-
+        db.session.commit()
         return jsonify({"success": True}), 200
 
     @app.route('/movies/<int:movie_id>', methods=['PATCH'])
-    @requires_auth(permission=["patch:movies"])
+    @requires_auth(permission=["patch:movies"])  
     def patch_movie(movie_id):
-        movie = db.session.get(Movie,movie_id)
+        movie = db.session.get(Movie, movie_id)
         if not movie:
             abort(404, description="Movie not found")
         
@@ -103,14 +99,12 @@ def create_app(test_config=None):
 
         movie.genres = body.get('genres', movie.genres)
 
-        with app.app_context():
-            db.session.commit()
-
+        db.session.commit()
         return jsonify({"success": True}), 200
 
     # POST implementation
     @app.route('/actors', methods=['POST'])
-    @requires_auth(permission=["post:actors"])
+    @requires_auth(permission=["post:actors"]) 
     def post_actor():
         body = request.get_json()
         if not body:
@@ -128,14 +122,13 @@ def create_app(test_config=None):
             abort(400, description=f"Actor {name} already exists")
 
         new_actor = Actor(name=name, age=age, gender=gender)
-        with app.app_context():
-            db.session.add(new_actor)
-            db.session.commit()
+        db.session.add(new_actor)
+        db.session.commit()
 
         return jsonify({"success": True}), 201
 
     @app.route('/movies', methods=['POST'])
-    @requires_auth(permission=["post:movies"])
+    @requires_auth(permission=["post:movies"]) 
     def post_movie():
         body = request.get_json()
         if not body:
@@ -159,9 +152,8 @@ def create_app(test_config=None):
             abort(400, description=f"Movie {title} already exists")
 
         new_movie = Movie(title=title, release_date=release_date, genres=genres)
-        with app.app_context():
-            db.session.add(new_movie)
-            db.session.commit()
+        db.session.add(new_movie)
+        db.session.commit()
 
         return jsonify({"success": True}), 201
 

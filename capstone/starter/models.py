@@ -106,6 +106,6 @@ def insert_sample_data():
 
 # Usage:
 # from your_module_name import setup_db, delete_all_tables, insert_sample_data
-# setup_db(app)
+#setup_db(app)
 # delete_all_tables()
-# insert_sample_data()
+#insert_sample_data()
